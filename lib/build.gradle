@@ -1,3 +1,5 @@
+import groovy.json.JsonSlurper
+
 plugins {
     id 'java-library'
     id 'com.github.davidmc24.gradle.plugin.avro' version '1.3.0'
@@ -27,43 +29,6 @@ sourceSets {
 
 avro {
     stringType = "CharSequence"
-}
-
-tasks.register("registerSchemas") {
-    doLast {
-        def schemas = [
-                [subject: 'screening-key',
-                 file   : 'screeningId.avsc'],
-                [subject: 'screening-value',
-                 file   : 'screening.avsc']
-        ]
-        schemas.each { schema ->
-            def subject = schema.subject
-            def filename = schema.file
-            def path = project.sourceSets.main.allSource.srcDirs.findAll { it.name.endsWith('avro') }[0].absolutePath
-            def schemaPath = "$path/$filename"
-            def screeningSchema = new File(schemaPath).text.replaceAll('\n', '')
-            def request = [schema: screeningSchema]
-            def requestStr = groovy.json.JsonOutput.toJson(request)
-
-            println "Registering the schema $schemaPath"
-
-            def post = new URL("http://localhost:8081/subjects/$subject/versions").openConnection()
-            post.setRequestMethod('POST')
-            post.setDoOutput(true)
-            post.setRequestProperty('Content-Type', 'application/json')
-            post.setRequestProperty('Accept', 'application/json')
-            post.getOutputStream().write(requestStr.getBytes('UTF-8'))
-            def postRC = post.getResponseCode()
-            def postBody = post.getInputStream().getText()
-
-            if (postRC == 200) {
-                println(postBody)
-            } else {
-                throw new GradleScriptException("Unable to create schema in registry: $postBody")
-            }
-        }
-    }
 }
 
 publishing {
@@ -107,34 +72,57 @@ tasks.register("publishSchemas") {
                 [subject: 'screening-value',
                  file   : 'screening.avsc']
         ]
-        schemas.each { schema ->
-            def defaultSchemaRegistryURL = "http://schema-registry:8081"
-            def schemaRegistryURL = System.getenv("SCHEMA_REGISTRY_URL") ?: defaultSchemaRegistryURL
-
-            def subject = schema.subject
-            def filename = schema.file
-            def path = project.sourceSets.main.allSource.srcDirs.findAll { it.name.endsWith('avro') }[0].absolutePath
-            def schemaPath = "$path/$filename"
-            def screeningSchema = new File(schemaPath).text.replaceAll('\n', '')
-            def request = [schema: screeningSchema]
-            def requestStr = groovy.json.JsonOutput.toJson(request)
-
-            println "Registering the schema $schemaPath"
-
-            def post = new URL("$schemaRegistryURL/subjects/$subject/versions").openConnection()
-            post.setRequestMethod('POST')
-            post.setDoOutput(true)
-            post.setRequestProperty('Content-Type', 'application/json')
-            post.setRequestProperty('Accept', 'application/json')
-            post.getOutputStream().write(requestStr.getBytes('UTF-8'))
-            def postRC = post.getResponseCode()
-            def postBody = post.getInputStream().getText()
-
-            if (postRC == 200) {
-                println(postBody)
-            } else {
-                throw new GradleScriptException("Unable to create schema in registry: $postBody")
-            }
-        }
+        schemas.each { registerSchema(it) }
     }
+}
+
+def registerSchema(schema) {
+    println "Registering the schema ${schema.file}"
+    def schemaDefinition = createSchemaDefinition(schema)
+    registerSchemaInRegistry(schema, schemaDefinition)
+}
+
+def createSchemaDefinition(schema) {
+    def path = project.sourceSets.main.allSource.srcDirs.findAll { it.name.endsWith('avro') }[0].absolutePath
+    def schemaDefinition = [schema: new File("$path/${schema.file}").text]
+    return schemaDefinition
+}
+
+
+def registerSchemaInRegistry(schema, schemaDefinition) {
+    def request = configureRequestMethodAndHeaders(schema)
+    writeRequest(request, groovy.json.JsonOutput.toJson(schemaDefinition))
+    def responseBody = readResponseBody(request)
+    if(isResponse200(request)) {
+        println("The schema ${schema.file} was published with the subject ${schema.subject} with the id ${responseBody.id}")
+    } else {
+        throw new RuntimeException("Unable to publish the schema ${schema.file} in the registry: ${responseBody.message}")
+    }
+}
+def configureRequestMethodAndHeaders(schema) {
+    def defaultSchemaRegistryURL = "http://schema-registry:8081"
+    def schemaRegistryURL = System.getenv("SCHEMA_REGISTRY_URL") ?: defaultSchemaRegistryURL
+    def request = new URL("$schemaRegistryURL/subjects/${schema.subject}/versions").openConnection()
+    request.setRequestMethod('POST')
+    request.setDoOutput(true)
+    request.setRequestProperty('Content-Type', 'application/json')
+    request.setRequestProperty('Accept', 'application/json')
+    return request
+}
+
+void writeRequest(request, payload) {
+    request.getOutputStream().write(payload.getBytes('UTF-8'))
+}
+
+def readResponseBody(request) {
+    def jsonSlurper = new groovy.json.JsonSlurper()
+    if(request.getResponseCode() == 200) {
+        return jsonSlurper.parseText(request.getInputStream().getText())
+    } else {
+        return jsonSlurper.parseText(request.getErrorStream().getText())
+    }
+}
+
+def isResponse200(request) {
+    return request.getResponseCode() == 200
 }
