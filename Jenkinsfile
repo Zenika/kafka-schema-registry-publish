@@ -11,10 +11,6 @@ pipeline {
                     }
                 }
                 stage('upload artifact') {
-                    environment {
-                        NEXUS_REPOSITORY = credentials('nexus-repository')
-                        NEXUS_CREDS = credentials('nexus-user')
-                    }
                     steps {
                         sh './gradlew publish'
                     }
