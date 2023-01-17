@@ -1,6 +1,11 @@
 # kafka-schema-registry-publish
 Publish schemas to your schemas registry using CI-CD
 
+Give rights to jenkins and nexus folder
+```shell
+sudo chmod 777 jenkins nexus
+```
+
 On host
 
 Authorize jenkins for using the docker socket
