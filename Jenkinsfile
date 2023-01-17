@@ -16,9 +16,6 @@ pipeline {
                         NEXUS_CREDS = credentials('nexus-user')
                     }
                     steps {
-                        sh 'echo "Nexus URL is $NEXUS_REPOSITORY"'
-                        sh 'echo "Nexus user is $NEXUS_CREDS_USR"'
-                        sh 'echo "Nexus password is $NEXUS_CREDS_PSW"'
                         sh './gradlew publish'
                     }
                 }
