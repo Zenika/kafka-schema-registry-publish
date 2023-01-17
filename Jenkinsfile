@@ -1,5 +1,4 @@
 pipeline {
-    agent none
     stages {
         stage('build, tests and upload') {
             stages {
