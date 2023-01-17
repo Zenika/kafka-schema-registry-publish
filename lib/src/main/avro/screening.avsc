@@ -22,6 +22,10 @@
     {
       "name": "cinemaId",
       "type": "string"
+    },
+    {
+      "name": "newField",
+      "type": "string"
     }
   ]
 }
