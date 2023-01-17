@@ -88,6 +88,8 @@ publishing {
             def nexusUsername = System.getenv("NEXUS_CREDS_USR") ?: "kafka"
             def nexusPassword = System.getenv("NEXUS_CREDS_PSW") ?: "kafka"
 
+            println nexusRepository
+
             credentials {
                 username = nexusUsername
                 password = nexusPassword
