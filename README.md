@@ -12,9 +12,9 @@ Get nexus password
 docker exec -it nexus cat /nexus-data/admin.password
 ```
 
-Create a user kafka kafka on nexus
+Create a user `kafka` with password `kafka` on nexus.
 
-Create a hosted repository on nexus
+Create a hosted repository on nexus named : `kafka` (set Version Policy > Mixed).
 
 Install jenkins and plugins
 
@@ -24,5 +24,16 @@ Install docker and docker pipeline plugins on jenkins
 
 Create pipeline in jenkins based on scm:
 https://github.com/Zenika/kafka-schema-registry-publish
+
+Create the following credentials in jenkins :
+
+nexus-user (username with password)
+
+```text
+username: kafka
+password: kafka
+```
+
+nexus-repository (secret text): `http://nexus:8081/repository/kafka`
 
 
