@@ -83,13 +83,58 @@ publishing {
 
     repositories {
         maven {
+            def defaultNexusRepositoryURL = "http://nexus:8081/repository/kafka/"
+            def nexusRepository = System.getenv("NEXUS_REPOSITORY") ?: defaultNexusRepositoryURL
+            def nexusUsername = System.getenv("NEXUS_CREDS_USR") ?: "kafka"
+            def nexusPassword = System.getenv("NEXUS_CREDS_PSW") ?: "kafka"
+
             credentials {
-                username = "kafka"
-                password = "kafka"
+                username = nexusUsername
+                password = nexusPassword
             }
 
-            url = "http://localhost:8083/repository/kafka/"
+            url = nexusRepository
             allowInsecureProtocol = true
+        }
+    }
+}
+
+tasks.register("publishSchemas") {
+    doLast {
+        def schemas = [
+                [subject: 'screening-key',
+                 file   : 'screeningId.avsc'],
+                [subject: 'screening-value',
+                 file   : 'screening.avsc']
+        ]
+        schemas.each { schema ->
+            def defaultSchemaRegistryURL = "http://schema-registry:8081"
+            def schemaRegistryURL = System.getenv("SCHEMA_REGISTRY_URL") ?: defaultSchemaRegistryURL
+
+            def subject = schema.subject
+            def filename = schema.file
+            def path = project.sourceSets.main.allSource.srcDirs.findAll { it.name.endsWith('avro') }[0].absolutePath
+            def schemaPath = "$path/$filename"
+            def screeningSchema = new File(schemaPath).text.replaceAll('\n', '')
+            def request = [schema: screeningSchema]
+            def requestStr = groovy.json.JsonOutput.toJson(request)
+
+            println "Registering the schema $schemaPath"
+
+            def post = new URL("$schemaRegistryURL/subjects/$subject/versions").openConnection()
+            post.setRequestMethod('POST')
+            post.setDoOutput(true)
+            post.setRequestProperty('Content-Type', 'application/json')
+            post.setRequestProperty('Accept', 'application/json')
+            post.getOutputStream().write(requestStr.getBytes('UTF-8'))
+            def postRC = post.getResponseCode()
+            def postBody = post.getInputStream().getText()
+
+            if (postRC == 200) {
+                println(postBody)
+            } else {
+                throw new GradleScriptException("Unable to create schema in registry: $postBody")
+            }
         }
     }
 }
