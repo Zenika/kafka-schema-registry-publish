@@ -113,3 +113,5 @@ gradle-app.setting
 .classpath
 # Ignore Gradle build output directory
 build
+
+jenkins
