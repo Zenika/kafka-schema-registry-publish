@@ -83,7 +83,7 @@ publishing {
 
     repositories {
         maven {
-            def defaultNexusRepositoryURL = "http://localhost:8081/repository/kafka/"
+            def defaultNexusRepositoryURL = "http://nexus:8081/repository/kafka/"
             def nexusRepository = System.getenv("NEXUS_REPOSITORY") ?: defaultNexusRepositoryURL
             def nexusUsername = System.getenv("NEXUS_CREDS_USR") ?: "kafka"
             def nexusPassword = System.getenv("NEXUS_CREDS_PSW") ?: "kafka"
