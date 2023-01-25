@@ -8,6 +8,7 @@
 > Publish schemas to your Schema Registry using CI-CD
 
 This project show the best practices to handle your schemas.
+See the [schemas documentation](https://zenika.github.io/kafka-schema-registry-publish/).
 
 ## Install
 
