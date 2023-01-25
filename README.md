@@ -128,6 +128,15 @@ To solve this problem, a default value can be added to the `newfield` field:
 This configuration is backward compatible.
 If you commit this code, and launch the Jenkins pipeline, the new schema will be published to the Schema Registry. Then, the artifact will be packaged and deployed to Nexus.
 
+## Generate the asyncapi documentation
+
+Install `asyncapi`.
+
+```shell
+cd docs
+asyncapi generate fromTemplate ../lib/src/main/asyncapi/asyncapp.yaml @asyncapi/html-template --force-write
+```
+
 ## Author
 
 👤 **Zenika**

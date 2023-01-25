@@ -1,0 +1,80 @@
+asyncapi: 2.5.0
+info:
+  title: Screening application
+  version: '0.1.0'
+  description: |
+    The screening application publishes a theater scheduled screenings for all clients to consume.
+    
+    If you want to consume any of our events give us an email. We'll assign you a consumer group.
+    
+    Use the avro schema in this project to consumes the screenings, or alternatively if you are a java project
+    use the dedicated jar we published:
+    
+    ```xml
+    <dependency>
+      <groupId>com.zenika</groupId>
+      <artifactId>screening-schemas</artifactId>
+      <version>0.1-20230125.081123-11</version>
+    </dependency>
+    ```
+
+  contact:
+    name: Screening team
+    url: https://github.com/Zenika/kafka-schema-registry-publish
+    email: test@noemail.com
+servers:
+  production:
+    url: kafka:9092
+    description: Production server
+    protocol: kafka
+    protocolVersion: '3.0.0'
+    bindings:
+      kafka:
+        schemaRegistryUrl: 'http://schema-registry:8081'
+        schemaRegistryVendor: 'confluent'
+        bindingVersion: 'latest'
+channels:
+  screening:
+    description: |
+      This channel is used by clients to get updates about screening in the cinema.
+
+    bindings:
+      kafka:
+        topic: 'screening'
+        partitions: 20
+        replicas: 1
+        topicConfiguration:
+          cleanup.policy: 'compact'
+        bindingVersion: 'latest'
+
+    subscribe:
+      operationId: receiveScreening
+      summary: |
+        Receive an update about a specific screening.
+        Uses the `ScreeningId` as the key of the message.
+      description: |
+        Each time the cinema decide to update its schedule, new screenings will be posted.
+      bindings:
+        kafka:
+          groupId:
+            type: string
+            description: |
+              The groupId of the client who wishes to get updates on screenings.
+
+      message:
+        $ref: '#/components/messages/Screening'
+
+components:
+  messages:
+    Screening:
+      schemaFormat: 'application/vnd.apache.avro;version=1.9.0'
+      summary: |
+        The screening that was updated.
+      payload:
+        $ref: '../lib/src/main/avro/screening.avsc'
+    ScreeningId:
+      schemaFormat: 'application/vnd.apache.avro;version=1.9.0'
+      summary: |
+        The id of a screening.
+      payload:
+        $ref: '../lib/src/main/avro/screeningId.avsc'
