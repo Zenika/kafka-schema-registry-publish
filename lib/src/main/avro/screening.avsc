@@ -23,6 +23,10 @@
     {
       "name": "cinemaId",
       "type": "string"
+    },
+    {
+      "name": "test",
+      "type": "string"
     }
   ]
 }
